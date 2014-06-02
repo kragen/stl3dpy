@@ -63,16 +63,15 @@ def triangles(rows, thickness):
     for triangle in mesh(top_edge):
         yield triangle
 
-    # XXX not sure these two have the normals pointing the right way
     left_edge_line = [row[0] for row in rows]
     left_edge = [[(x, y, z), (x, y+thickness, z)] for x, y, z in left_edge_line]
     for triangle in mesh(left_edge):
-        yield triangle
+        yield reverse_direction(triangle)
 
     right_edge_line = [row[-1] for row in rows]
     right_edge = [[(x, y, z), (x, y+thickness, z)] for x, y, z in right_edge_line]
     for triangle in mesh(right_edge):
-        yield reverse_direction(triangle)
+        yield triangle
 
 def offset_triangle_by((dx, dy, dz), triangle):
     return tuple((x+dx, y+dy, z+dz) for x, y, z in triangle)
