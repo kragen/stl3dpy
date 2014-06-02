@@ -104,12 +104,8 @@ def normalize((x, y, z)):
     return (x/norm, y/norm, z/norm)
 
 if __name__ == '__main__':
-    seed=0
-    pp = list(points(seed=seed, max_x=40, dx=5, dy=2, max_z=20, dz=5))
+    seed = 0 if len(sys.argv) < 2 else int(sys.argv[1])
+    pp = list(points(seed=seed, max_x=40, dx=3, dy=3, max_z=20, dz=2.5))
     pp.reverse()
-    # for row in pp:
-    #     print row
-    # for tri in triangles(pp, thickness=1):
-    #     print tri
-    for line in stl_file(triangles(pp, thickness=1), name="brownian surface seed %s" % seed):
+    for line in stl_file(triangles(pp, thickness=1.2), name="brownian surface seed %s" % seed):
         sys.stdout.write(line)
