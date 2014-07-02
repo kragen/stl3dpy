@@ -3,6 +3,9 @@
 """
 from __future__ import division
 
+import math
+import sys                      # for warn
+
 def mesh(rows):
     "Turn a rectangular mesh into a sequence of triangles."
     for ii in range(1, len(rows)):
@@ -17,12 +20,15 @@ def mesh(rows):
 
 def extrude_mesh(rows, vec):
     rows = list(rows)
-    # Generate in parallel the untranslated and translated surfaces:
-    for triangle in mesh(rows):
+    basic_surface = list(mesh(rows))
+    for triangle in basic_surface:
         yield triangle
-        yield reverse_direction(offset_triangle_by(vec, triangle))
+
+    for triangle in flipped(vec, basic_surface):
+        yield triangle
 
     # Now generate the four edges.
+    # XXX it would be a lot easier to concatenate them!
     bottom_edge = [rows[0], [translate(vert, vec) for vert in rows[0]]]
     for triangle in mesh(bottom_edge):
         yield reverse_direction(triangle)
@@ -41,8 +47,13 @@ def extrude_mesh(rows, vec):
     for triangle in mesh(right_edge):
         yield triangle
 
-def offset_triangle_by(vec, triangle):
-    return tuple(translate(vert, vec) for vert in triangle)
+def flipped(vec, surface):
+    "Generate a flipped version of surface translated by vec."
+    for triangle in surface:
+        yield reverse_direction(translate_verts(vec, triangle))
+
+def translate_verts(vec, verts):
+    return [translate(vert, vec) for vert in verts]
 
 def translate((x, y, z), (dx, dy, dz)):
     return (x+dx, y+dy, z+dz)
@@ -72,4 +83,40 @@ def normal((p1, p2, p3)):
 
 def normalize((x, y, z)):
     norm = (x**2 + y**2 + z**2)**0.5
+    if norm == 0:
+        warn("normalizing zero vector")
+        return (x, y, z)
     return (x/norm, y/norm, z/norm)
+
+def warn(astring):
+    sys.stderr.write(astring + '\n')
+
+class Polyline:
+    def __init__(self, startpoint):
+        self.points = [startpoint]
+
+    def rlineto(self, vec):
+        self.lineto(translate(self.points[-1], vec))
+        return self
+
+    def lineto(self, point):
+        self.points.append(point)
+        return self
+
+    def verts(self):
+        return self.points
+
+def convex_fill(center, path):
+    "Fill a convex polygon from a point in its center with triangles."
+    for ii in range(len(path)):
+        yield (center, path[ii], path[(ii+1) % len(path)])
+
+def z_rotate_surface(angle, surface):
+    for triangle in surface:
+        yield z_rotate_vertices(angle, triangle)
+
+def z_rotate_vertices(angle, verts):
+    return [(x*math.cos(angle) - y*math.sin(angle),
+             y*math.cos(angle) + x*math.sin(angle),
+             z)
+            for x, y, z in verts]
