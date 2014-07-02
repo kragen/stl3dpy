@@ -47,34 +47,37 @@ def mesh(rows):
             yield (bb, dd, cc)
     
 
-def triangles(rows, thickness):
+def extrude_mesh(rows, vec):
     rows = list(rows)
     # Generate in parallel the positive-y and negative-y surfaces:
     for triangle in mesh(rows):
         yield triangle
-        yield reverse_direction(offset_triangle_by((0, thickness, 0), triangle))
+        yield reverse_direction(offset_triangle_by(vec, triangle))
 
     # Now generate the four edges.
-    bottom_edge = [rows[0], [(x, y+thickness, z) for x, y, z in rows[0]]]
+    bottom_edge = [rows[0], [translate(vert, vec) for vert in rows[0]]]
     for triangle in mesh(bottom_edge):
         yield reverse_direction(triangle)
 
-    top_edge = [rows[-1], [(x, y+thickness, z) for x, y, z in rows[-1]]]
+    top_edge = [rows[-1], [translate(vert, vec) for vert in rows[-1]]]
     for triangle in mesh(top_edge):
         yield triangle
 
     left_edge_line = [row[0] for row in rows]
-    left_edge = [[(x, y, z), (x, y+thickness, z)] for x, y, z in left_edge_line]
+    left_edge = [[vert, translate(vert, vec)] for vert in left_edge_line]
     for triangle in mesh(left_edge):
         yield reverse_direction(triangle)
 
     right_edge_line = [row[-1] for row in rows]
-    right_edge = [[(x, y, z), (x, y+thickness, z)] for x, y, z in right_edge_line]
+    right_edge = [[vert, translate(vert, vec)] for vert in right_edge_line]
     for triangle in mesh(right_edge):
         yield triangle
 
-def offset_triangle_by((dx, dy, dz), triangle):
-    return tuple((x+dx, y+dy, z+dz) for x, y, z in triangle)
+def offset_triangle_by(vec, triangle):
+    return tuple(translate(vert, vec) for vert in triangle)
+
+def translate((x, y, z), (dx, dy, dz)):
+    return (x+dx, y+dy, z+dz)
 
 def reverse_direction((p1, p2, p3)):
     return p1, p3, p2
@@ -107,5 +110,6 @@ if __name__ == '__main__':
     seed = 0 if len(sys.argv) < 2 else int(sys.argv[1])
     pp = list(points(seed=seed, max_x=40, dx=3, dy=.5, max_z=20, dz=2.5))
     pp.reverse()
-    for line in stl_file(triangles(pp, thickness=.75), name="brownian surface seed %s" % seed):
+    for line in stl_file(extrude_mesh(pp, (0, .75, 0)),
+                         name="brownian surface seed %s" % seed):
         sys.stdout.write(line)
