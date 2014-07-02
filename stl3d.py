@@ -52,6 +52,10 @@ def flipped(vec, surface):
     for triangle in surface:
         yield reverse_direction(translate_verts(vec, triangle))
 
+def translate_surface(vec, surface):
+    for triangle in surface:
+        yield translate_verts(vec, triangle)
+
 def translate_verts(vec, verts):
     return [translate(vert, vec) for vert in verts]
 

@@ -44,7 +44,7 @@ def main(argv):
     clearance = 0.25            # mm to leave between parts to slide smoothly
     t_top_width = strip_width
 
-    spacing = 50                # mm between objects
+    spacing = 5                 # mm between objects (beyond outside radius)
 
     inner_edge = arc(ri, 0, 2*pi-gap, fn)
     outer_edge = arc(ro, 0, 2*pi-gap, fn)
@@ -133,7 +133,12 @@ def main(argv):
     slot = list(stl3d.z_rotate_surface(slot_rotate_angle, slot_unrotated))
 
     shower_ring = bottom + top + inner_surface + outer_surface + tt + slot
-    shower_rings = shower_ring
+    outer_shower_ring = list(stl3d.translate_surface((0, ro*2 + spacing, 0),
+                                                     shower_ring))
+    outer_shower_rings = [list(stl3d.z_rotate_surface(ii * pi / 3,
+                                                      outer_shower_ring))
+                          for ii in range(6)]
+    shower_rings = shower_ring + sum(outer_shower_rings, [])
 
     for line in stl3d.stl_file(shower_rings, name="shower rings"):
         sys.stdout.write(line)
